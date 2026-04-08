@@ -40,14 +40,14 @@
       h2_apps:'תשלום לאפליקציות',
       manage:'⚙ ניהול רשימות', add_row:'+ הוסף שורה',
       col_date:'תאריך', col_vendor:'ספק', col_amount:'סכום הוצאה', col_method:'ירד דרך', col_notes:'הערות',
-      col_appname:'שם האפליקציה', col_link:'לינק', col_paymethod:'דרך תשלום', col_cc:'כרטיס אשראי',
+      col_appname:'שם האפליקציה', col_link:'לינק', col_amount_app:'סכום', col_date:'תאריך', col_paymethod:'דרך תשלום', col_cc:'כרטיס אשראי',
       total:'סה״כ סכום לכל הטבלה',
       empty_exp:'אין רשומות עדיין – לחץ "הוסף שורה" להתחיל', empty_apps:'אין רשומות עדיין',
       mtitle_fixed:'ניהול "ירד דרך"', mtitle_var:'ניהול "ירד דרך"', mtitle_app:'ניהול "דרך תשלום"',
       add_opt:'הוסף', add_opt_ph:'הוסף אפשרות חדשה...',
       modal_exp:'הוספת / עריכת הוצאה', modal_app:'הוספת / עריכת אפליקציה', modal_del:'אישור מחיקה',
       lbl_date:'תאריך *', lbl_vendor:'ספק *', lbl_amount:'סכום הוצאה *', lbl_method:'ירד דרך', lbl_notes:'הערות',
-      lbl_appname:'שם האפליקציה *', lbl_link:'לינק', lbl_appdate:'תאריך', lbl_paymethod:'דרך תשלום', lbl_cc:'כרטיס אשראי',
+      lbl_appname:'שם האפליקציה *', lbl_link:'לינק', lbl_appdate:'תאריך', lbl_appamount:'סכום הוצאה', lbl_paymethod:'דרך תשלום', lbl_cc:'כרטיס אשראי',
       ph_vendor:'שם הספק', ph_amount:'0.00', ph_notes:'הערות (אופציונלי)',
       ph_appname:'שם האפליקציה', ph_link:'https://...', ph_cc:'ספרות אחרונות / שם הכרטיס', ph_appnotes:'הערות (אופציונלי)',
       choose:'בחר...', cancel:'ביטול', save:'שמור', delete:'מחק',
@@ -66,14 +66,14 @@
       h2_apps:'App Payments',
       manage:'⚙ Manage Lists', add_row:'+ Add Row',
       col_date:'Date', col_vendor:'Vendor', col_amount:'Amount', col_method:'Via', col_notes:'Notes',
-      col_appname:'App Name', col_link:'Link', col_paymethod:'Payment Method', col_cc:'Credit Card',
+      col_appname:'App Name', col_link:'Link', col_amount_app:'Amount', col_date_app:'Date', col_paymethod:'Payment Method', col_cc:'Credit Card',
       total:'Total',
       empty_exp:'No records yet – click "Add Row" to start', empty_apps:'No records yet',
       mtitle_fixed:'Manage "Via"', mtitle_var:'Manage "Via"', mtitle_app:'Manage "Payment Method"',
       add_opt:'Add', add_opt_ph:'Add new option...',
       modal_exp:'Add / Edit Expense', modal_app:'Add / Edit App', modal_del:'Confirm Delete',
       lbl_date:'Date *', lbl_vendor:'Vendor *', lbl_amount:'Amount *', lbl_method:'Via', lbl_notes:'Notes',
-      lbl_appname:'App Name *', lbl_link:'Link', lbl_appdate:'Date', lbl_paymethod:'Payment Method', lbl_cc:'Credit Card',
+      lbl_appname:'App Name *', lbl_link:'Link', lbl_appdate:'Date', lbl_appamount:'Amount', lbl_paymethod:'Payment Method', lbl_cc:'Credit Card',
       ph_vendor:'Vendor name', ph_amount:'0.00', ph_notes:'Notes (optional)',
       ph_appname:'App name', ph_link:'https://...', ph_cc:'Last digits / Card name', ph_appnotes:'Notes (optional)',
       choose:'Choose...', cancel:'Cancel', save:'Save', delete:'Delete',
@@ -127,7 +127,7 @@
     document.querySelectorAll('.total-label').forEach(b => b.textContent = t.total);
     setThs('fixed-table', [t.col_date,t.col_vendor,t.col_amount,t.col_method,t.col_notes,'']);
     setThs('var-table',   [t.col_date,t.col_vendor,t.col_amount,t.col_method,t.col_notes,'']);
-    setThs('apps-table',  [t.col_appname,t.col_link,t.col_date,t.col_paymethod,t.col_cc,t.col_notes,'']);
+    setThs('apps-table',  [t.col_appname,t.col_link,t.col_amount_app||t.col_amount,t.col_date,t.col_paymethod,t.col_cc,t.col_notes,'']);
     q('modal-exp-title').textContent = t.modal_exp;
     q('modal-app-title').textContent = t.modal_app;
     q('modal-del-title').textContent = t.modal_del;
@@ -141,6 +141,7 @@
     q('lbl-app-name').textContent   = t.lbl_appname;
     q('lbl-app-link').textContent   = t.lbl_link;
     q('lbl-app-date').textContent   = t.lbl_appdate;
+    q('lbl-app-amount').textContent = t.lbl_appamount||t.lbl_amount.replace(' *','');
     q('lbl-app-method').textContent = t.lbl_paymethod;
     q('lbl-app-cc').textContent     = t.lbl_cc;
     q('lbl-app-notes').textContent  = t.lbl_notes;
@@ -227,12 +228,14 @@
 
   function renderAppsTable() {
     const {rows} = state.apps;
+    const amt = rows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
     const tbody = rows.length===0
-      ? `<tr><td colspan="7" class="empty">${t.empty_apps}</td></tr>`
+      ? `<tr><td colspan="8" class="empty">${t.empty_apps}</td></tr>`
       : rows.sort((a,b)=>(b.ts||0)-(a.ts||0)).map(r=>`
           <tr>
             <td>${esc(r.appName)}</td>
             <td>${r.link?`<a href="${esc(r.link)}" target="_blank">${t.open_link}</a>`:''}</td>
+            <td class="num">${r.amount?fmtILS(r.amount):''}</td>
             <td>${esc(r.date)}</td><td>${esc(r.payMethod)}</td><td>${esc(r.creditCard)}</td>
             <td class="muted">${esc(r.notes)}</td>
             <td class="actions">
@@ -241,6 +244,9 @@
             </td>
           </tr>`).join('');
     q('apps-table').querySelector('tbody').innerHTML = tbody;
+    const trow = q('apps-table').querySelector('.total-row');
+    trow.style.display = rows.length ? '' : 'none';
+    if (rows.length) q('apps-table').querySelector('.total-val').textContent = fmtILS(amt);
   }
 
   function renderOptManager(key, col, containerId) {
@@ -288,7 +294,7 @@
   let _edApp = null;
   window.openAddApp = () => {
     _edApp={mode:'add'};
-    ['app-name','app-link','app-date','app-cc','app-notes'].forEach(id=>q(id).value='');
+    ['app-name','app-link','app-date','app-amount','app-cc','app-notes'].forEach(id=>q(id).value='');
     q('app-method').innerHTML=buildOpts(state.apps.opts);
     q('app-modal').style.display='flex';
   };
@@ -296,14 +302,14 @@
     const r=state.apps.rows.find(r=>r.id===id); if(!r) return;
     _edApp={mode:'edit',id};
     q('app-name').value=r.appName||''; q('app-link').value=r.link||'';
-    q('app-date').value=r.date||''; q('app-cc').value=r.creditCard||''; q('app-notes').value=r.notes||'';
+    q('app-date').value=r.date||''; q('app-amount').value=r.amount||''; q('app-cc').value=r.creditCard||''; q('app-notes').value=r.notes||'';
     q('app-method').innerHTML=buildOpts(state.apps.opts,r.payMethod||'');
     q('app-modal').style.display='flex';
   };
   window.saveApp = async () => {
     const appName=q('app-name').value.trim();
     if(!appName){alert(t.err_appname);return;}
-    const data={appName,link:q('app-link').value.trim(),date:q('app-date').value,payMethod:q('app-method').value,creditCard:q('app-cc').value.trim(),notes:q('app-notes').value.trim()};
+    const data={appName,link:q('app-link').value.trim(),date:q('app-date').value,amount:parseFloat(q('app-amount').value)||0,payMethod:q('app-method').value,creditCard:q('app-cc').value.trim(),notes:q('app-notes').value.trim()};
     try {
       if(_edApp.mode==='add'){await addRow('apps',data);toast(t.t_added);}
       else{await updateRow('apps',_edApp.id,data);toast(t.t_updated);}
@@ -589,10 +595,11 @@ select option{background:var(--card)}
           <div class="opts-panel" id="apps-opts-panel"><h4 id="mtitle-apps">ניהול "דרך תשלום"</h4><div id="apps-opts"></div></div>
           <div class="table-wrap">
             <table id="apps-table">
-              <thead><tr><th>שם האפליקציה</th><th>לינק</th><th>תאריך</th><th>דרך תשלום</th><th>כרטיס אשראי</th><th>הערות</th><th></th></tr></thead>
+              <thead><tr><th>שם האפליקציה</th><th>לינק</th><th>סכום</th><th>תאריך</th><th>דרך תשלום</th><th>כרטיס אשראי</th><th>הערות</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
+          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
@@ -625,6 +632,7 @@ select option{background:var(--card)}
     <div class="modal-body">
       <div class="field"><label id="lbl-app-name">שם האפליקציה *</label><input type="text" id="app-name"></div>
       <div class="field"><label id="lbl-app-link">לינק</label><input type="url" id="app-link" style="direction:ltr;text-align:right"></div>
+      <div class="field"><label id="lbl-app-amount">סכום הוצאה</label><input type="number" id="app-amount" step="0.01" inputmode="decimal" style="direction:ltr;text-align:right"></div>
       <div class="field"><label id="lbl-app-date">תאריך</label><input type="date" id="app-date"></div>
       <div class="field"><label id="lbl-app-method">דרך תשלום</label><select id="app-method"></select></div>
       <div class="field"><label id="lbl-app-cc">כרטיס אשראי</label><input type="text" id="app-cc"></div>
