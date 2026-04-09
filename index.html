@@ -53,7 +53,8 @@
       choose:'בחר...', cancel:'ביטול', save:'שמור', delete:'מחק',
       del_msg:'האם למחוק את הרשומה?', del_sub:'פעולה זו בלתי הפיכה.',
       open_link:'🔗 פתח',
-      t_added:'הרשומה נוספה ✓', t_updated:'הרשומה עודכנה ✓', t_deleted:'נמחק', t_opt_added:'נוסף ✓', t_err:'שגיאה',
+      t_added:'הרשומה נוספה ✓', t_updated:'הרשומה עודכנה ✓', t_deleted:'נמחק', t_opt_added:'נוסף ✓', t_err:'שגיאה', t_moved:'השורה הועברה ✓',
+      move_to:'העבר ל:', move_fixed:'הוצאות קבועות', move_var:'הוצאות משתנות', move_apps:'תשלום לאפליקציות',
       err_date:'יש להזין תאריך', err_vendor:'יש להזין ספק', err_amount:'יש להזין סכום תקין', err_appname:'יש להזין שם אפליקציה',
       login_title:'ניהול הוצאות אישי', login_sub:'התחבר עם חשבון Google כדי להמשיך',
       login_btn:'התחבר עם Google', logout:'התנתק', del_opt_confirm:'למחוק אפשרות זו?'
@@ -79,7 +80,8 @@
       choose:'Choose...', cancel:'Cancel', save:'Save', delete:'Delete',
       del_msg:'Delete this record?', del_sub:'This action cannot be undone.',
       open_link:'🔗 Open',
-      t_added:'Record added ✓', t_updated:'Record updated ✓', t_deleted:'Deleted', t_opt_added:'Added ✓', t_err:'Error',
+      t_added:'Record added ✓', t_updated:'Record updated ✓', t_deleted:'Deleted', t_opt_added:'Added ✓', t_err:'Error', t_moved:'Row moved ✓',
+      move_to:'Move to:', move_fixed:'Fixed Expenses', move_var:'Variable Expenses', move_apps:'App Payments',
       err_date:'Please enter a date', err_vendor:'Please enter a vendor', err_amount:'Please enter a valid amount', err_appname:'Please enter an app name',
       login_title:'Personal Expense Manager', login_sub:'Sign in with Google to continue',
       login_btn:'Sign in with Google', logout:'Sign out', del_opt_confirm:'Delete this option?'
@@ -216,6 +218,7 @@
             <td class="num">${fmtILS(r.amount)}</td><td>${esc(r.method)}</td>
             <td class="muted">${esc(r.notes)}</td>
             <td class="actions">
+              <button class="btn-icon" onclick="openMove('${key}','${r.id}')" title="העבר">⇄</button>
               <button class="btn-icon" onclick="openEditExpense('${key}','${r.id}')">✎</button>
               <button class="btn-icon del" onclick="confirmDelete('${key}','${r.id}')">✕</button>
             </td>
@@ -240,6 +243,7 @@
             <td>${esc(r.date)}</td><td>${esc(r.payMethod)}</td><td>${esc(r.creditCard)}</td>
             <td class="muted">${esc(r.notes)}</td>
             <td class="actions">
+              <button class="btn-icon" onclick="openMove('apps','${r.id}')" title="העבר">⇄</button>
               <button class="btn-icon" onclick="openEditApp('${r.id}')">✎</button>
               <button class="btn-icon del" onclick="confirmDelete('apps','${r.id}')">✕</button>
             </td>
@@ -345,6 +349,55 @@
     const col=_del.key==='fixed'?'fixed_expenses':_del.key==='variable'?'variable_expenses':'apps';
     try { await deleteRow(col,_del.id); toast(t.t_deleted); } catch(e){toast(t.t_err,'err');}
     closeModal('confirm-modal'); _del=null;
+  };
+
+  // ─── Move row ──────────────────────────────────────────────────────────────
+  let _move = null; // { key, id, row }
+
+  window.openMove = function(key, id) {
+    const row = state[key].rows.find(r=>r.id===id);
+    if (!row) return;
+    _move = { key, id, row };
+
+    // Build the 2 destination options (exclude current)
+    const all = [
+      { key:'fixed',    col:'fixed_expenses',    label: t.move_fixed },
+      { key:'variable', col:'variable_expenses',  label: t.move_var   },
+      { key:'apps',     col:'apps',               label: t.move_apps  }
+    ].filter(o => o.key !== key);
+
+    q('move-modal-title').textContent = t.move_to;
+    q('move-modal-sub').textContent   = row.vendor || row.appName || '';
+    q('move-btn-1').textContent = all[0].label;
+    q('move-btn-1').dataset.destKey = all[0].key;
+    q('move-btn-1').dataset.destCol = all[0].col;
+    q('move-btn-2').textContent = all[1].label;
+    q('move-btn-2').dataset.destKey = all[1].key;
+    q('move-btn-2').dataset.destCol = all[1].col;
+
+    q('move-modal').style.display = 'flex';
+  };
+
+  window.doMove = async function(btnNum) {
+    if (!_move) return;
+    const btn = q('move-btn-' + btnNum);
+    const destCol = btn.dataset.destCol;
+
+    // Source collection
+    const srcCol = _move.key === 'fixed' ? 'fixed_expenses'
+                 : _move.key === 'variable' ? 'variable_expenses' : 'apps';
+
+    // Copy row data (strip id and ts, keep everything else)
+    const { id, ts, ...rowData } = _move.row;
+
+    try {
+      await addRow(destCol, rowData);
+      await deleteRow(srcCol, _move.id);
+      toast(t.t_moved);
+    } catch(e) { toast(t.t_err + ': ' + e.message, 'err'); }
+
+    closeModal('move-modal');
+    _move = null;
   };
 
   // ─── UI ────────────────────────────────────────────────────────────────────
@@ -655,6 +708,21 @@ select option{background:var(--card)}
     <div class="modal-foot">
       <button class="btn btn-ghost cancel-btn" onclick="closeModal('confirm-modal')">ביטול</button>
       <button class="btn" id="del-confirm-btn" style="background:var(--red);color:#fff" onclick="doDelete()">מחק</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Move Row -->
+<div class="modal-bg" id="move-modal" onclick="if(event.target===this)closeModal('move-modal')">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head">
+      <h3 id="move-modal-title">העבר שורה</h3>
+      <button class="btn-icon" onclick="closeModal('move-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <p style="font-size:0.85rem;color:var(--muted)" id="move-modal-sub">בחר יעד:</p>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" id="move-btn-1" onclick="doMove(1)"></button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" id="move-btn-2" onclick="doMove(2)"></button>
     </div>
   </div>
 </div>
