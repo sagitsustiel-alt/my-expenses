@@ -221,9 +221,10 @@
             </td>
           </tr>`).join('');
     q(tblId).querySelector('tbody').innerHTML = tbody;
-    const trow = q(tblId).querySelector('.total-row');
+    const section = q(tblId).closest('.section');
+    const trow = section.querySelector('.total-row');
     trow.style.display = rows.length ? '' : 'none';
-    if (rows.length) q(tblId).querySelector('.total-val').textContent = fmtILS(sumRows(rows));
+    if (rows.length) section.querySelector('.total-val').textContent = fmtILS(sumRows(rows));
   }
 
   function renderAppsTable() {
@@ -244,9 +245,10 @@
             </td>
           </tr>`).join('');
     q('apps-table').querySelector('tbody').innerHTML = tbody;
-    const trow = q('apps-table').querySelector('.total-row');
+    const section = q('apps-table').closest('.section');
+    const trow = section.querySelector('.total-row');
     trow.style.display = rows.length ? '' : 'none';
-    if (rows.length) q('apps-table').querySelector('.total-val').textContent = fmtILS(amt);
+    if (rows.length) section.querySelector('.total-val').textContent = fmtILS(amt);
   }
 
   function renderOptManager(key, col, containerId) {
@@ -559,7 +561,7 @@ select option{background:var(--card)}
               <tbody></tbody>
             </table>
           </div>
-          <div class="total-row" style="display:none"><span class="total-label">סה״כ</span><span class="total-val">₪0</span></div>
+          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
@@ -579,7 +581,7 @@ select option{background:var(--card)}
               <tbody></tbody>
             </table>
           </div>
-          <div class="total-row" style="display:none"><span class="total-label">סה״כ</span><span class="total-val">₪0</span></div>
+          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
