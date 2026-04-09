@@ -493,8 +493,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* Main */
 #main-app{display:none}
-header{background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;min-height:58px;position:sticky;top:0;z-index:50;gap:10px;flex-wrap:wrap}
-.header-left,.header-right{display:flex;align-items:center;gap:8px}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-direction:row;min-height:58px;position:sticky;top:0;z-index:50;gap:10px;flex-wrap:wrap}
+.header-left{display:flex;align-items:center;gap:8px;direction:ltr}.header-right{display:flex;align-items:center;gap:8px}
 #h-title{font-size:1.05rem;font-weight:800;white-space:nowrap}
 #h-sub{font-size:0.75rem;color:var(--muted)}
 #user-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border);display:none}
@@ -609,7 +609,7 @@ select option{background:var(--card)}
 <div id="main-app">
   <header>
     <div class="header-right">
-      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי <span style="color:var(--muted);font-size:0.7rem;margin-right:4px">v1.1.6</span></div></div>
+      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.8</span></div></div>
       <button id="grand-total-btn" onclick="toggleGrandTotal()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#b0bcd4;font-family:var(--font);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap">סה״כ הוצאות</button>
       <span id="grand-total-val" style="display:none;font-size:1rem;font-weight:800;color:var(--accent);direction:ltr"></span>
     </div>
