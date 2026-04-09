@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="הוצאות">
 <title>ניהול הוצאות</title>
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAKIUlEQVR4nO3de3BU5RkG8GcvuSwhMYkRYiGEmBCIjICRtgwNw1AhomCr7VirU1tnMlSnGVqnOLRMBsZiUzNSLs5INNbUWJqiFse0OkpDQZggtda0EAcjoBAgQMjdLAnBJHv6R8jJ5rKbs2fP7tnd9/nNZGZv33fOhvc933s27K4FISI+PU8xex8oeJxnD1vM3gcAMG0nWPDkzqxABHWjLHrSIphhCPiGWPTkj0CHIWCTs/DJSIEKguGTsvApkIwOgtXIyVj8FGhG15ghaWLhkxmMWA38XgFY/GQWI2rPrwCw+Mls/tagriWEhU+hSE9L5PMKwOKnUKWnNn0KAIufQp2vNao5ACx+Che+1KqhfwcgCjeaAsCjP4UbrTU7YQBY/BSutNSu1wCw+CncTVTDPAcg0TwGgEd/ihTeanncALD4KdJ4qmm2QCTamADw6E+Rarza5gpAoo0IAI/+FOlG1zhXABKNASDR1ACw/SEp3GudKwCJxgCQaFaA7Q/JM1TzXAFINAaARGMASDQL+3+SjCsAicYAkGgMAInGAJBoDACJxgCQaAwAicYAkGgMAInGAJBoDACJZnWePWwxeyeIzOA8e9jCFYBEYwBINAaARLMCg72Q2TtCFExDNc8VgERjAEg0NQBsg0gK91rnCkCiMQAk2ogAsA2iSDe6xrkCkGhjAsBVgCLVeLXNFYBEGzcAXAUo0niqaY8rAENAkcJbLbMFItG8BoCrAIW7iWp4whWAIaBwpaV2NbVADAGFG601y3MAEk1zALgKULjwpVZ9WgEYAgp1vtaozy2QUSEw6vt9tcxTV55vyLa0zNOwb5Mh29IyTzB/h+FAT23q+qLsoQ3Fp+cpesYTGcmfg7LfR3MjQqDnu371HrXmFVT7PEbvCjJzxWafx+hdQYL5Owwl/nYkhrQzXAnIDEa044ae1LoHYV5B9Roj56bQUVee/wczt2/kizGG/h2ArxJRoBldYwErWLZFZKRAHVwDfsRmEMgfge4qgtqyMAykRTBbadN6doaB3Jl1/hgyJ60MhCyh8oLJ/wEne/vSW8z91gAAAABJRU5ErkJggg==">
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAP0lEQVR42mNgGAWjYBQQCaybvv1HxpSqG/wOQDeIUjzqgKHngNFcMOqA0YJo1AGjBdGoA0YdMOgcMApGAa0AAA9Cx6+QbQETAAAAAElFTkSuQmCC">
+<link rel="icon" type="image/png" sizes="16x16" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAJUlEQVR42mNgGJ7AuunbfxAmJIZTIyFMOwMo9sJoGAwmA4YWAAAQ0qyBTWamEQAAAABJRU5ErkJggg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -55,6 +57,7 @@
       open_link:'🔗 פתח',
       t_added:'הרשומה נוספה ✓', t_updated:'הרשומה עודכנה ✓', t_deleted:'נמחק', t_opt_added:'נוסף ✓', t_err:'שגיאה', t_moved:'השורה הועברה ✓',
       move_to:'העבר ל:', move_fixed:'הוצאות קבועות', move_var:'הוצאות משתנות', move_apps:'תשלום לאפליקציות',
+      grand_total:'סה״כ הוצאות', grand_total_hide:'הסתר',
       err_date:'יש להזין תאריך', err_vendor:'יש להזין ספק', err_amount:'יש להזין סכום תקין', err_appname:'יש להזין שם אפליקציה',
       login_title:'ניהול הוצאות אישי', login_sub:'התחבר עם חשבון Google כדי להמשיך',
       login_btn:'התחבר עם Google', logout:'התנתק', del_opt_confirm:'למחוק אפשרות זו?'
@@ -82,6 +85,7 @@
       open_link:'🔗 Open',
       t_added:'Record added ✓', t_updated:'Record updated ✓', t_deleted:'Deleted', t_opt_added:'Added ✓', t_err:'Error', t_moved:'Row moved ✓',
       move_to:'Move to:', move_fixed:'Fixed Expenses', move_var:'Variable Expenses', move_apps:'App Payments',
+      grand_total:'Total Expenses', grand_total_hide:'Hide',
       err_date:'Please enter a date', err_vendor:'Please enter a vendor', err_amount:'Please enter a valid amount', err_appname:'Please enter an app name',
       login_title:'Personal Expense Manager', login_sub:'Sign in with Google to continue',
       login_btn:'Sign in with Google', logout:'Sign out', del_opt_confirm:'Delete this option?'
@@ -161,6 +165,13 @@
     q('login-sub').textContent   = t.login_sub;
     q('login-btn').textContent   = t.login_btn;
     if (q('logout-btn')) q('logout-btn').textContent = t.logout;
+    // grand total button — only update if currently showing label (not "הסתר")
+    if (q('grand-total-val').style.display === 'none') {
+      q('grand-total-btn').textContent = t.grand_total || 'סה״כ הוצאות';
+    } else {
+      q('grand-total-btn').textContent = t.grand_total_hide || 'הסתר';
+      q('grand-total-val').textContent = fmtILS(calcGrandTotal());
+    }
     document.querySelectorAll('.opt-add-input').forEach(el => el.placeholder = t.add_opt_ph);
     document.querySelectorAll('.opt-add-btn').forEach(el => el.textContent = t.add_opt);
   }
@@ -402,6 +413,26 @@
 
   // ─── UI ────────────────────────────────────────────────────────────────────
   window.closeModal  = id => q(id).style.display='none';
+
+  function calcGrandTotal() {
+    const all = [...state.fixed.rows, ...state.variable.rows, ...state.apps.rows];
+    return all.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  }
+
+  window.toggleGrandTotal = function() {
+    const val = q('grand-total-val');
+    const btn = q('grand-total-btn');
+    if (val.style.display === 'none') {
+      val.textContent = fmtILS(calcGrandTotal());
+      val.style.display = 'inline';
+      btn.textContent = t.grand_total_hide || 'הסתר';
+      btn.style.color = 'var(--accent)';
+    } else {
+      val.style.display = 'none';
+      btn.textContent = t.grand_total || 'סה״כ הוצאות';
+      btn.style.color = '#b0bcd4';
+    }
+  };
   window.toggleLang  = () => setLang(lang==='he'?'en':'he');
   window.showTab = tab => {
     document.querySelectorAll('.tab-content').forEach(el=>el.style.display='none');
@@ -579,6 +610,8 @@ select option{background:var(--card)}
   <header>
     <div class="header-left">
       <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי</div></div>
+      <button id="grand-total-btn" onclick="toggleGrandTotal()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#b0bcd4;font-family:var(--font);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap">סה״כ הוצאות</button>
+      <span id="grand-total-val" style="display:none;font-size:1rem;font-weight:800;color:var(--accent);direction:ltr"></span>
     </div>
     <div class="header-right">
       <img id="user-avatar" src="" alt="">
