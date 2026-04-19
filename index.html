@@ -115,7 +115,7 @@
 
   function applyLang() {
     q('h-title').textContent     = t.title;
-    q('h-sub').innerHTML = t.sub + ' &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.13</span>';
+    q('h-sub').innerHTML = t.sub + ' &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.15</span>';
     q('lang-btn').textContent    = t.lang_toggle;
     q('lang-btn-login').textContent = t.lang_toggle;
     q('tab-btn-1').textContent   = t.tab1;
@@ -207,6 +207,40 @@
 
   // ─── State ─────────────────────────────────────────────────────────────────
   const state = { fixed:{rows:[],opts:[]}, variable:{rows:[],opts:[]}, apps:{rows:[],opts:[]} };
+  const sortState = {
+    fixed:    { col: null, dir: 1 },
+    variable: { col: null, dir: 1 },
+    apps:     { col: null, dir: 1 }
+  };
+
+  window.sortTable = function(key, col) {
+    const s = sortState[key];
+    if (s.col === col) s.dir *= -1;
+    else { s.col = col; s.dir = 1; }
+    if (key === 'apps') renderAppsTable();
+    else renderExpenseTable(key, key === 'fixed' ? 'fixed-table' : 'var-table');
+  };
+
+  function sortRows(rows, key) {
+    const { col, dir } = sortState[key];
+    if (!col) return [...rows].sort((a,b) => (b.ts||0) - (a.ts||0));
+    return [...rows].sort((a,b) => {
+      let va = a[col] ?? '', vb = b[col] ?? '';
+      if (col === 'amount') { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
+      else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+      return va < vb ? -dir : va > vb ? dir : 0;
+    });
+  }
+
+  function updateSortHeaders(tableId, key, cols) {
+    const ths = document.querySelectorAll('#' + tableId + ' thead th');
+    ths.forEach((th, i) => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (cols[i] && cols[i] === sortState[key].col) {
+        th.classList.add(sortState[key].dir === 1 ? 'sort-asc' : 'sort-desc');
+      }
+    });
+  }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const fmtILS  = n => { const v=parseFloat(n); return isNaN(v)?n:v.toLocaleString('he-IL',{style:'currency',currency:'ILS'}); };
@@ -222,9 +256,17 @@
   // ─── Render ────────────────────────────────────────────────────────────────
   function renderExpenseTable(key, tblId) {
     const {rows} = state[key];
+    const sorted = sortRows(rows, key);
+    const expCols = ['date','vendor','amount','method','notes',null];
+    updateSortHeaders(tblId, key, expCols);
+    // Update th onclick
+    document.querySelectorAll('#'+tblId+' thead th').forEach((th,i) => {
+      if (expCols[i]) th.onclick = () => sortTable(key, expCols[i]);
+      else th.onclick = null;
+    });
     const tbody = rows.length===0
       ? `<tr><td colspan="6" class="empty">${t.empty_exp}</td></tr>`
-      : rows.sort((a,b)=>(b.ts||0)-(a.ts||0)).map(r=>`
+      : sorted.map(r=>`
           <tr>
             <td>${esc(r.date)}</td><td>${esc(r.vendor)}</td>
             <td class="num">${fmtILS(r.amount)}</td><td>${esc(r.method)}</td>
@@ -246,9 +288,16 @@
   function renderAppsTable() {
     const {rows} = state.apps;
     const amt = rows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+    const sorted = sortRows(rows, 'apps');
+    const appCols = ['appName','link','amount','date','payMethod','creditCard','notes',null];
+    updateSortHeaders('apps-table', 'apps', appCols);
+    document.querySelectorAll('#apps-table thead th').forEach((th,i) => {
+      if (appCols[i]) th.onclick = () => sortTable('apps', appCols[i]);
+      else th.onclick = null;
+    });
     const tbody = rows.length===0
       ? `<tr><td colspan="8" class="empty">${t.empty_apps}</td></tr>`
-      : rows.sort((a,b)=>(b.ts||0)-(a.ts||0)).map(r=>`
+      : sorted.map(r=>`
           <tr>
             <td>${esc(r.appName)}</td>
             <td>${r.link?`<a href="${esc(r.link)}" target="_blank">${t.open_link}</a>`:''}</td>
@@ -606,7 +655,7 @@ main{padding:20px 16px 80px;max-width:1000px;margin:0 auto}
 /* Table */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:0.88rem}
-thead tr{border-bottom:1px solid var(--border)}thead th{position:sticky;top:0;background:var(--card);z-index:2}
+thead tr{border-bottom:1px solid var(--border)}thead th{position:sticky;top:0;background:var(--card);z-index:2;cursor:pointer;user-select:none}thead th:hover{color:var(--text)}thead th.sort-asc::after{content:" ↑";color:var(--accent)}thead th.sort-desc::after{content:" ↓";color:var(--accent)}thead th:last-child{cursor:default}
 th{padding:10px 14px;text-align:right;color:var(--muted);font-weight:600;font-size:0.78rem;white-space:nowrap}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
@@ -682,7 +731,7 @@ select option{background:var(--card)}
 <div id="main-app">
   <header>
     <div class="header-right">
-      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.13</span></div></div>
+      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.15</span></div></div>
       <button id="grand-total-btn" onclick="toggleGrandTotal()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#b0bcd4;font-family:var(--font);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap">סה״כ הוצאות</button>
       <span id="grand-total-val" style="display:none;font-size:1rem;font-weight:800;color:var(--accent);direction:ltr"></span>
     </div>
@@ -712,8 +761,8 @@ select option{background:var(--card)}
           <div class="section-head">
             <div class="section-head-info"><h2 id="h2-fixed">הוצאות קבועות</h2><p id="sub-fixed">יורד מחשבון בנק 076</p></div>
             <div class="section-head-actions">
+              <span id="fixed-total-inline" style="font-size:1rem;font-weight:800;color:var(--accent);direction:ltr;display:none"></span>
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('fixed-opts-panel')">⚙ ניהול רשימות</button>
-              <button class="btn btn-ghost" onclick="exportToExcel('fixed')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddExpense('fixed')">+ הוסף שורה</button>
             </div>
           </div>
@@ -732,8 +781,8 @@ select option{background:var(--card)}
           <div class="section-head">
             <div class="section-head-info"><h2 id="h2-var">הוצאות משתנות</h2><p id="sub-var">יורד מחשבון בנק 718</p></div>
             <div class="section-head-actions">
+              <span id="var-total-inline" style="font-size:1rem;font-weight:800;color:var(--accent);direction:ltr;display:none"></span>
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('variable-opts-panel')">⚙ ניהול רשימות</button>
-              <button class="btn btn-ghost" onclick="exportToExcel('variable')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddExpense('variable')">+ הוסף שורה</button>
             </div>
           </div>
@@ -752,8 +801,8 @@ select option{background:var(--card)}
           <div class="section-head">
             <div class="section-head-info"><h2 id="h2-apps">תשלום לאפליקציות</h2></div>
             <div class="section-head-actions">
+              <span id="apps-total-inline" style="font-size:1rem;font-weight:800;color:var(--accent);direction:ltr;display:none"></span>
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('apps-opts-panel')">⚙ ניהול רשימות</button>
-              <button class="btn btn-ghost" onclick="exportToExcel('apps')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddApp()">+ הוסף שורה</button>
             </div>
           </div>
