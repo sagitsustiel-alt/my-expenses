@@ -114,7 +114,7 @@
 
   function applyLang() {
     q('h-title').textContent     = t.title;
-    q('h-sub').textContent       = t.sub;
+    q('h-sub').innerHTML = t.sub + ' &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.12</span>';
     q('lang-btn').textContent    = t.lang_toggle;
     q('lang-btn-login').textContent = t.lang_toggle;
     q('tab-btn-1').textContent   = t.tab1;
@@ -229,16 +229,17 @@
             <td class="num">${fmtILS(r.amount)}</td><td>${esc(r.method)}</td>
             <td class="muted">${esc(r.notes)}</td>
             <td class="actions">
+              <button class="btn-icon star ${r.starred?'on':''}" onclick="toggleStar('${key}','${r.id}',${r.starred?'true':'false'})" title="סמן">★</button>
               <button class="btn-icon" onclick="openMove('${key}','${r.id}')" title="העבר">⇄</button>
               <button class="btn-icon" onclick="openEditExpense('${key}','${r.id}')">✎</button>
               <button class="btn-icon del" onclick="confirmDelete('${key}','${r.id}')">✕</button>
             </td>
           </tr>`).join('');
     q(tblId).querySelector('tbody').innerHTML = tbody;
-    const section = q(tblId).closest('.section');
-    const trow = section.querySelector('.total-row');
-    trow.style.display = rows.length ? '' : 'none';
-    if (rows.length) section.querySelector('.total-val').textContent = fmtILS(sumRows(rows));
+    const inlineId = tblId === 'fixed-table' ? 'fixed-total-inline' : 'var-total-inline';
+    const inlineEl = q(inlineId);
+    if (rows.length) { inlineEl.textContent = fmtILS(sumRows(rows)); inlineEl.style.display = 'inline'; }
+    else { inlineEl.style.display = 'none'; }
   }
 
   function renderAppsTable() {
@@ -254,16 +255,16 @@
             <td>${esc(r.date)}</td><td>${esc(r.payMethod)}</td><td>${esc(r.creditCard)}</td>
             <td class="muted">${esc(r.notes)}</td>
             <td class="actions">
+              <button class="btn-icon star ${r.starred?'on':''}" onclick="toggleStar('apps','${r.id}',${r.starred?'true':'false'})" title="סמן">★</button>
               <button class="btn-icon" onclick="openMove('apps','${r.id}')" title="העבר">⇄</button>
               <button class="btn-icon" onclick="openEditApp('${r.id}')">✎</button>
               <button class="btn-icon del" onclick="confirmDelete('apps','${r.id}')">✕</button>
             </td>
           </tr>`).join('');
     q('apps-table').querySelector('tbody').innerHTML = tbody;
-    const section = q('apps-table').closest('.section');
-    const trow = section.querySelector('.total-row');
-    trow.style.display = rows.length ? '' : 'none';
-    if (rows.length) section.querySelector('.total-val').textContent = fmtILS(amt);
+    const appsInline = q('apps-total-inline');
+    if (rows.length) { appsInline.textContent = fmtILS(amt); appsInline.style.display = 'inline'; }
+    else { appsInline.style.display = 'none'; }
   }
 
   function renderOptManager(key, col, containerId) {
@@ -412,6 +413,52 @@
   };
 
   // ─── UI ────────────────────────────────────────────────────────────────────
+  window.exportToExcel = function(key) {
+    const isApps = key === 'apps';
+    const rows = state[key].rows;
+    if (!rows.length) { toast(t.t_err + ': אין נתונים לייצוא', 'err'); return; }
+
+    let headers, getData;
+    if (!isApps) {
+      headers = [t.col_date, t.col_vendor, t.col_amount, t.col_method, t.col_notes];
+      getData = r => [r.date||'', r.vendor||'', r.amount||'', r.method||'', r.notes||''];
+    } else {
+      headers = [t.col_appname, t.col_link, t.col_amount||'סכום', t.col_date, t.col_paymethod, t.col_cc, t.col_notes];
+      getData = r => [r.appName||'', r.link||'', r.amount||'', r.date||'', r.payMethod||'', r.creditCard||'', r.notes||''];
+    }
+
+    // Build CSV with BOM for Hebrew Excel support
+    const BOM = '\uFEFF';
+    const escape = v => {
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g,'""') + '"' : s;
+    };
+    const lines = [headers.map(escape).join(',')];
+    rows.forEach(r => lines.push(getData(r).map(escape).join(',')));
+
+    // Add total row for expense tables
+    if (!isApps) {
+      const total = rows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+      lines.push([t.total,'',''+total,'',''].map(escape).join(','));
+    }
+
+    const csv = BOM + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const name = key==='fixed' ? 'הוצאות_קבועות' : key==='variable' ? 'הוצאות_משתנות' : 'תשלום_אפליקציות';
+    a.href = url; a.download = name + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('הקובץ יוצא בהצלחה ✓');
+  };
+
+  window.toggleStar = async function(key, id, current) {
+    const colName = key==='fixed' ? 'fixed_expenses' : key==='variable' ? 'variable_expenses' : 'apps';
+    try { await updateRow(colName, id, { starred: !current }); }
+    catch(e) { toast(t.t_err, 'err'); }
+  };
+
   window.closeModal  = id => q(id).style.display='none';
 
   function calcGrandTotal() {
@@ -528,10 +575,10 @@ main{padding:20px 16px 80px;max-width:1000px;margin:0 auto}
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{background:var(--hover);color:var(--text)}
 .btn-sm{padding:5px 12px;font-size:0.8rem;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:var(--font);cursor:pointer;font-weight:600}.btn-sm:hover{background:#2563eb}
 .btn-icon{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:0.9rem;transition:all .15s;display:inline-flex;align-items:center;justify-content:center}
-.btn-icon:hover{background:var(--hover);color:var(--text)}.btn-icon.del:hover{background:#ef444420;color:var(--red)}
+.btn-icon:hover{background:var(--hover);color:var(--text)}.btn-icon.del:hover{background:#ef444420;color:var(--red)}.btn-icon.star{color:#3a3f52}.btn-icon.star.on{color:#ef4444}.btn-icon.star:hover{color:#ef4444}
 
 /* Table */
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overflow-y:auto;max-height:420px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:0.88rem}
 thead tr{border-bottom:1px solid var(--border)}thead th{position:sticky;top:0;background:var(--card);z-index:2}
 th{padding:10px 14px;text-align:right;color:var(--muted);font-weight:600;font-size:0.78rem;white-space:nowrap}
@@ -609,7 +656,7 @@ select option{background:var(--card)}
 <div id="main-app">
   <header>
     <div class="header-right">
-      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.8</span></div></div>
+      <div><div id="h-title">ניהול הוצאות</div><div id="h-sub">אישי &nbsp;<span style="color:var(--muted);font-size:0.7rem">v1.1.12</span></div></div>
       <button id="grand-total-btn" onclick="toggleGrandTotal()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#b0bcd4;font-family:var(--font);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap">סה״כ הוצאות</button>
       <span id="grand-total-val" style="display:none;font-size:1rem;font-weight:800;color:var(--accent);direction:ltr"></span>
     </div>
@@ -637,6 +684,7 @@ select option{background:var(--card)}
             <div class="section-head-info"><h2 id="h2-fixed">הוצאות קבועות</h2><p id="sub-fixed">יורד מחשבון בנק 076</p></div>
             <div class="section-head-actions">
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('fixed-opts-panel')">⚙ ניהול רשימות</button>
+              <button class="btn btn-ghost" onclick="exportToExcel('fixed')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddExpense('fixed')">+ הוסף שורה</button>
             </div>
           </div>
@@ -647,7 +695,6 @@ select option{background:var(--card)}
               <tbody></tbody>
             </table>
           </div>
-          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
@@ -657,6 +704,7 @@ select option{background:var(--card)}
             <div class="section-head-info"><h2 id="h2-var">הוצאות משתנות</h2><p id="sub-var">יורד מחשבון בנק 718</p></div>
             <div class="section-head-actions">
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('variable-opts-panel')">⚙ ניהול רשימות</button>
+              <button class="btn btn-ghost" onclick="exportToExcel('variable')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddExpense('variable')">+ הוסף שורה</button>
             </div>
           </div>
@@ -667,7 +715,6 @@ select option{background:var(--card)}
               <tbody></tbody>
             </table>
           </div>
-          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
@@ -677,6 +724,7 @@ select option{background:var(--card)}
             <div class="section-head-info"><h2 id="h2-apps">תשלום לאפליקציות</h2></div>
             <div class="section-head-actions">
               <button class="btn btn-ghost manage-btn" onclick="toggleOpts('apps-opts-panel')">⚙ ניהול רשימות</button>
+              <button class="btn btn-ghost" onclick="exportToExcel('apps')" style="color:#22c55e;border-color:#22c55e22">⬇ Excel</button>
               <button class="btn btn-primary add-row-btn" onclick="openAddApp()">+ הוסף שורה</button>
             </div>
           </div>
@@ -687,7 +735,6 @@ select option{background:var(--card)}
               <tbody></tbody>
             </table>
           </div>
-          <div class="total-row" style="display:none"><span class="total-label">סה״כ סכום לכל הטבלה</span><span class="total-val">₪0</span></div>
         </div>
       </div>
 
